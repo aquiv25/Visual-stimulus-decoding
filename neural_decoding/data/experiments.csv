@@ -1,0 +1,4 @@
+id,imaging_depth,targeted_structure,cre_line,reporter_line,acquisition_age_days,experiment_container_id,session_type,donor_name,specimen_name,fail_eye_tracking
+661437140,175,VISp,Slc17a7-IRES2-Cre,Ai93(TITL-GCaMP6f),95,661437138,three_session_A,365251,Slc17a7-IRES2-Cre;Camk2a-tTA;Ai93-365251,True
+662351346,175,VISp,Slc17a7-IRES2-Cre,Ai93(TITL-GCaMP6f),96,661437138,three_session_B,365251,Slc17a7-IRES2-Cre;Camk2a-tTA;Ai93-365251,True
+662358233,175,VISp,Slc17a7-IRES2-Cre,Ai93(TITL-GCaMP6f),97,661437138,three_session_C2,365251,Slc17a7-IRES2-Cre;Camk2a-tTA;Ai93-365251,True
