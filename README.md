@@ -1,45 +1,139 @@
-# Visual-stimulus-decoding
+# Neural Population Decoder — Visual Change Detection
 
-## Predicting stimulus change events from calcium imaging recordings in mouse visual cortex
-**Goal:** to investigate whether neural population activity in the Visual Cortex can predict when a visual stimulus change occurs during an active behavioral task. To address this, I build a computational model that decodes stimulus changes from neuronal population activity recorded in mice performing a visual change-detection task.
+A computational model that decodes **stimulus changes** from two-photon calcium imaging data recorded in mice performing an active visual change-detection task.
 
-**Core question:** Can the activity of neuronal populations be used to predict whether a visual stimulus has changed during a behavioral task?
+---
 
-Previous research in systems neuroscience has demonstrated that sensory information is encoded by distributed populations of neurons rather than single neurons. Population decoding approaches have been widely used to study how neural activity represents stimuli, decisions, and behavioral states. Advances in optical physiology techniques such as two-photon calcium imaging allow simultaneous recording of activity from hundreds of neurons. These datasets enable computational modeling of neural population dynamics and decoding of sensory information, including signals related to stimulus change detection — which are thought to reflect surprise responses and decision-related activity in visual cortex.
+## Scientific Question
 
-## Dataset Details
-1) Method: Two-photon calcium imaging (ΔF/F)
-2) Subjects: Multiple mice — active change-detection task
-3) Neurons: 666 per session used
-4) Signal: ΔF/F fluorescence per neuron
-5) Timepoints: Image flashes every ~750 ms
-6) Access: AllenSDK (Python) — Allen Visual Behavior Ophys Dataset
+> Can the activity of neuronal populations in the Visual Cortex predict whether a visual stimulus has changed during a behavioral task?
 
-## Variables & Hypothesis
-**Dependent Variable Y**
+**H₀:** ROC-AUC ≈ 0.5 (population activity carries no information about stimulus change)  
+**H₁:** ROC-AUC > 0.75  
+**Result:** AUC = 0.844, p = 0.0099 ✓
 
-Binary: did the stimulus change? (0 / 1)
+---
 
-1 = new image presented (change trial)
+## Dataset
 
-0 = same image repeated (no-change trial)
+**Allen Visual Behavior Ophys Dataset** — [allenswdb.github.io](https://allenswdb.github.io/physiology/ophys/visual-coding/vc2p-background.html)
 
-One value per stimulus flash
+| Parameter | Value |
+|---|---|
+| Method | Two-photon calcium imaging (ΔF/F) |
+| Task | Active change-detection (mouse licks to report image change) |
+| Experiment ID | 877018118 |
+| Brain area | Primary visual cortex (VISp) |
+| Neurons | 666 |
+| Session type | OPHYS_3_images_A (Familiar) |
+| Stimulus | Image flashes every ~750 ms |
+| Access | AllenSDK (Python) |
 
-**Independent Variables X**
+---
 
-ΔF/F per neuron in [onset, onset + 500 ms] window
+## Model
 
-Population activity vector [n₁…nₖ]
+**Random Forest Classifier** trained on population ΔF/F activity.
 
-**Mathematical Hypothesis**
+| Parameter | Value |
+|---|---|
+| Features (X) | Mean ΔF/F per neuron in [onset, onset + 500 ms] |
+| Label (Y) | 1 = image changed, 0 = same image repeated |
+| Trials | 576 (288 change / 288 no-change, balanced) |
+| Evaluation | Stratified 5-fold cross-validation |
+| Significance | Permutation test (n = 100) |
 
-Model estimates:  P(Y = 1 | X)   ·   H₀: ROC-AUC ≈ 0.5 ·   H₁: ROC-AUC > 0.75
+### Results
 
-**Confounding Variables**
-1) Between-animal variability
-2) Task engagement / attention state
-3) Session-to-session drift
-4) Licking / motor artifacts
+| Metric | Value |
+|---|---|
+| ROC-AUC | **0.844 ± 0.026** |
+| Balanced Accuracy | **78.5% ± 1.4%** |
+| p-value | **0.0099** |
 
+---
 
+## Project Structure
+
+```
+neural_decoding/
+├── 01_download_data.py       # Download Allen Visual Behavior Ophys session
+├── 02_prepare_features.py    # Build feature matrix X and labels Y
+├── 03_decode_model.py        # Train Random Forest, evaluate, plot results
+├── 04_neuron_contribution.py # Feature importance, activity distributions
+├── run_all.sh                # Run full pipeline in one command
+├── data/
+│   ├── vb_cache/             # AllenSDK cache (downloaded automatically)
+│   ├── stim_table.csv        # Stimulus presentation table
+│   ├── X.npy                 # Feature matrix (576 × 666)
+│   └── y.npy                 # Labels (576,)
+└── figures/
+    ├── roc_curve.png
+    ├── permutation_test.png
+    ├── confusion_matrix.png
+    ├── rf_impurity_importance_top20.png
+    └── activity_distributions.png
+```
+
+---
+
+## Installation
+
+```bash
+# Create environment (requires Python 3.10 — AllenSDK not yet compatible with 3.13)
+conda create -n allen_env python=3.10 -y
+conda activate allen_env
+
+# Install dependencies
+pip install allensdk scikit-learn pandas matplotlib seaborn "setuptools<71" "pynwb==2.3.3" "hdmf==3.9.0"
+```
+
+---
+
+## Usage
+
+```bash
+# Run full pipeline
+bash run_all.sh
+
+# Or step by step
+python 01_download_data.py      # ~5 min first run (downloads ~1 GB)
+python 02_prepare_features.py
+python 03_decode_model.py       # ~5 min (permutation test)
+python 04_neuron_contribution.py
+```
+
+> **Note:** First run downloads the NWB session file (~1 GB) via AllenSDK S3 cache. Subsequent runs use the local cache.
+
+---
+
+## Output Figures
+
+| Figure | Description |
+|---|---|
+| `roc_curve.png` | ROC curve with AUC, 5-fold cross-validation |
+| `permutation_test.png` | Null distribution vs observed AUC (p-value) |
+| `confusion_matrix.png` | Confusion matrix on full dataset |
+| `rf_impurity_importance_top20.png` | Top 20 neurons by mean decrease in impurity |
+| `activity_distributions.png` | ΔF/F distributions: change vs no-change trials |
+
+---
+
+## Dependencies
+
+| Library | Purpose |
+|---|---|
+| Python 3.10 | Core language |
+| AllenSDK | Dataset access and loading |
+| NumPy / pandas | Data processing |
+| scikit-learn | Random Forest, metrics, cross-validation |
+| matplotlib / seaborn | Visualization |
+
+---
+
+## Confounding Variables
+
+- Task engagement / attention state
+- Between-animal variability
+- Session-to-session drift
+- Licking / motor artifacts
