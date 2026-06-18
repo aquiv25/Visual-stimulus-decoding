@@ -63,7 +63,7 @@ neural_decoding/
 ├── 04_neuron_contribution.py # Feature importance, activity distributions
 ├── run_all.sh                # Run full pipeline in one command
 ├── data/
-│   ├── vb_cache/             # AllenSDK cache (downloaded automatically)
+|   |
 │   ├── stim_table.csv        # Stimulus presentation table
 │   ├── X.npy                 # Feature matrix (576 × 666)
 │   └── y.npy                 # Labels (576,)
